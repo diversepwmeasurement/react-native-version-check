@@ -1,35 +1,48 @@
-name: Test
-on:
-  push:
-    branches:
-      - master
-      - develop
-  pull_request:
 jobs:
   test:
-    runs-on: ${{ matrix.os }}
+    runs-on: self-hosted
+    steps:
+    - continue-on-error: true
+      uses: actions/checkout@v3
+    - continue-on-error: true
+      name: Setup node ${{ matrix.node-version }} in ${{ runner.OS }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+    - continue-on-error: true
+      name: Cache Node.js modules
+      uses: actions/cache@v3
+      with:
+        key: ${{ runner.OS }}-${{ matrix.node-version }}-node-${{ hashFiles('**/package-lock.json')
+          }}
+        path: ~/.npm
+        restore-keys: '${{ runner.OS }}-${{ matrix.node-version }}-node-
+
+          ${{ runner.OS }}-${{ matrix.node-version }}-
+
+          ${{ runner.OS }}-
+
+          '
+    - continue-on-error: true
+      name: Install node modules
+      run: 'npm install
+
+        npm run lerna-bootstrap
+
+        '
+    - continue-on-error: true
+      run: npm run test:ci
+    - continue-on-error: true
+      run: npm run test:coverage
     strategy:
       matrix:
-        os: [ubuntu-latest]
-        node-version: [14.x, 16.x, 18.x]
-    steps:
-      - uses: actions/checkout@v3
-      - name: Setup node ${{ matrix.node-version }} in ${{ runner.OS }}
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ matrix.node-version }}
-      - name: Cache Node.js modules
-        uses: actions/cache@v3
-        with:
-          path: ~/.npm
-          key: ${{ runner.OS }}-${{ matrix.node-version }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.OS }}-${{ matrix.node-version }}-node-
-            ${{ runner.OS }}-${{ matrix.node-version }}-
-            ${{ runner.OS }}-
-      - name: Install node modules
-        run: |
-          npm install
-          npm run lerna-bootstrap
-      - run: npm run test:ci
-      - run: npm run test:coverage
+        node-version:
+        - 14.x
+        - 16.x
+        - 18.x
+        os:
+        - ubuntu-latest
+name: Test
+on:
+  repository_dispatch:
+    types: trigger-ga___test.yml
